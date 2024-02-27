@@ -62,7 +62,7 @@ int main() {
 	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
 	jameslib::Framebuffer framebuffer = jameslib::createFramebuffer(screenWidth, screenHeight, GL_RGB16F);
-	jameslib::Framebuffer depthFBO = jameslib::createFramebuffer(screenWidth, screenHeight, GL_RGB16F);
+	jameslib::Framebuffer depthFBO = jameslib::createFramebuffer(1024, 1024, GL_RGB16F);
 
 	ew::Shader shader = ew::Shader("assets/lit.vert", "assets/lit.frag");
 	ew::Shader ppShader = ew::Shader("assets/postprocess.vert", "assets/postprocess.frag");
@@ -78,6 +78,9 @@ int main() {
 
 	directionalLight.target = glm::vec3(0, 0, 0);
 	directionalLight.orthographic = true;
+	directionalLight.position = glm::vec3(5, 5, 5);
+
+	planeTransform.position += glm::vec3(0, -3, 0);
 
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
@@ -99,15 +102,12 @@ int main() {
 		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.fbo);
 		glViewport(0, 0, framebuffer.width, framebuffer.height);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glClearColor(0.7f, 0.3f, 0.9f, 1.0f);
-
-		//TODO: Configure shadows
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
 		shader.use();
 		shader.setInt("_MainTex", 0);
 		shader.setMat4("_Model", glm::mat4(1.0f));
 		shader.setMat4("_ViewProjection", camera.projectionMatrix() * camera.viewMatrix());
-		shader.setMat4("_Model", monkeyTransform.modelMatrix());
 		shader.setVec3("_EyePos", camera.position);
 		shader.setFloat("_Material.Ka", material.Ka);
 		shader.setFloat("_Material.Kd", material.Kd);
@@ -115,26 +115,43 @@ int main() {
 		shader.setFloat("_Material.Shininess", material.Shininess);
 
 		glBindTextureUnit(0, brickTexture);
-		planeMesh.draw();
+		shader.setMat4("_Model", monkeyTransform.modelMatrix());
 		monkeyModel.draw();
+		shader.setMat4("_Model", planeTransform.modelMatrix());
+		planeMesh.draw();
 
-		glBindFramebuffer(GL_FRAMEBUFFER, 0); 
+		glBindFramebuffer(GL_FRAMEBUFFER, depthFBO.fbo); 
+		glViewport(0, 0, 1024, 1024);
+		glClear(GL_DEPTH_BUFFER_BIT);
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+
+		shadowShader.use();
+		shadowShader.setMat4("model", glm::mat4(1.0f));
+		shadowShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+		shadowShader.setMat4("viewProjection", directionalLight.projectionMatrix() * directionalLight.viewMatrix());
+		shadowShader.setVec3("lightPos", directionalLight.position);
+		shadowShader.setVec3("viewPos", directionalLight.target);
+		shadowShader.setInt("depthMap", depthFBO.depthBuffer);
+		shadowShader.setInt("diffuseTexture", 0);
+		
+		glBindTextureUnit(0, depthFBO.depthBuffer);
+		shadowShader.setMat4("model", monkeyTransform.modelMatrix());
+		monkeyModel.draw();
+		shadowShader.setMat4("model", planeTransform.modelMatrix());
+		planeMesh.draw();
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glViewport(0, 0, screenWidth, screenHeight);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-
-		//TODO: Configure shadows
-
-		//glBindTexture(GL_TEXTURE_2D, depthFBO.depthBuffer);
-		//monkeyModel.draw();
-		//planeMesh.draw();
 
 		ppShader.use();
 		ppShader.setInt("_BlurEnabled", boxBlurEnabled);
 		ppShader.setFloat("_BlurStrength", blurStrength);
 
 		glBindVertexArray(dummyVAO);
-		glBindTextureUnit(0, framebuffer.colorBuffer);
+		glBindTextureUnit(0, depthFBO.depthBuffer);
+		glBindTextureUnit(1, framebuffer.colorBuffer);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		drawUI();
