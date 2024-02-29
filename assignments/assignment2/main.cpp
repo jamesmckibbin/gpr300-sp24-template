@@ -40,6 +40,9 @@ ew::CameraController cameraController;
 int boxBlurEnabled = 0;
 float blurStrength = 1.0f;
 
+float shadowBiasMin = 0.001f;
+float shadowBiasMax = 0.010f;
+
 struct Material {
 	float Ka = 1.0;
 	float Kd = 0.5;
@@ -67,9 +70,11 @@ int main() {
 	camera.aspectRatio = (float)screenWidth / screenHeight;
 	camera.fov = 60.0f;
 
-	directionalLight.target = glm::vec3(0, 0, 0);
+	directionalLight.target = glm::vec3(0, -3, 0);
 	directionalLight.orthographic = true;
-	directionalLight.position = glm::vec3(5, 5, 5);
+	directionalLight.position = glm::vec3(10, 10, 10);
+	directionalLight.orthoHeight = 10;
+	directionalLight.aspectRatio = 1;
 
 	planeTransform.position += glm::vec3(0, -3, 0);
 
@@ -91,6 +96,7 @@ int main() {
 
 		//RENDER
 
+		glCullFace(GL_FRONT);
 		glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO.fbo);
 		glViewport(0, 0, 1024, 1024);
 		glClear(GL_DEPTH_BUFFER_BIT);
@@ -104,6 +110,7 @@ int main() {
 		shadowShader.setMat4("_Model", planeTransform.modelMatrix());
 		planeMesh.draw();
 
+		glCullFace(GL_BACK);
 		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.fbo);
 		glViewport(0, 0, framebuffer.width, framebuffer.height);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -122,6 +129,8 @@ int main() {
 		shader.setFloat("_Material.Kd", material.Kd);
 		shader.setFloat("_Material.Ks", material.Ks);
 		shader.setFloat("_Material.Shininess", material.Shininess);
+		shader.setFloat("_ShadowBiasMin", shadowBiasMin);
+		shader.setFloat("_ShadowBiasMin", shadowBiasMax);
 
 		shader.setMat4("_Model", monkeyTransform.modelMatrix());
 		monkeyModel.draw();
@@ -177,6 +186,12 @@ void drawUI(jameslib::Framebuffer shadowFBO) {
 	if (ImGui::CollapsingHeader("Post Processing")) {
 		ImGui::SliderInt("Box Blur", &boxBlurEnabled, 0, 1);
 		ImGui::SliderFloat("Blur Strength", &blurStrength, 0.0f, 1.0f);
+	}
+	if (ImGui::CollapsingHeader("Directional Light")) {
+		ImGui::SliderFloat3("Position", &directionalLight.position.x, -10.0f, 10.0f);
+		ImGui::SliderFloat("Shadow Bias Min", &shadowBiasMin, 0.001, 0.010);
+		ImGui::SliderFloat("Shadow Bias Max", &shadowBiasMax, 0.005, 0.030);
+
 	}
 	ImGui::End();
 

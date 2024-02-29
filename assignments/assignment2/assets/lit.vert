@@ -22,6 +22,6 @@ void main()
 	vs_out.WorldNormal = transpose(inverse(mat3(_Model))) * vNormal;
 	vs_out.TexCoord = vTexCoord;
 
-	LightSpacePos = _LightViewProj * _Model * vec4(vPos,1);
+	LightSpacePos = _LightViewProj * _Model * vec4(vPos,1.0);
 	gl_Position = _ViewProjection * _Model * vec4(vPos,1.0);
 }
