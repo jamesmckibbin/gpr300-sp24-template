@@ -12,7 +12,7 @@ jameslib::Framebuffer jameslib::createFramebuffer(unsigned int width, unsigned i
 
 	glGenTextures(1, &buffer.colorBuffer);
 	glBindTexture(GL_TEXTURE_2D, buffer.colorBuffer);
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, width, height);
+	glTexStorage2D(GL_TEXTURE_2D, 1, colorFormat, width, height);
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, buffer.colorBuffer, 0);
 
 	glGenTextures(1, &buffer.depthBuffer);
