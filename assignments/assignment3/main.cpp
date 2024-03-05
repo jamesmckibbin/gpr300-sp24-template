@@ -54,8 +54,8 @@ int main() {
 	GLFWwindow* window = initWindow("Assignment 0", screenWidth, screenHeight);
 	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
-	jameslib::Framebuffer framebuffer = jameslib::createFramebuffer(screenWidth, screenHeight, GL_RGB16F, 1);
-	jameslib::Framebuffer shadowFBO = jameslib::createFramebuffer(1024, 1024, GL_RGB16F, 1);
+	jameslib::Framebuffer framebuffer = jameslib::createFramebuffer(screenWidth, screenHeight, GL_RGB16F);
+	jameslib::Framebuffer shadowFBO = jameslib::createFramebuffer(1024, 1024, GL_RGB16F);
 	jameslib::Framebuffer gBuffer = jameslib::createGBuffer(screenWidth, screenHeight);
 
 	ew::Shader shader = ew::Shader("assets/lit.vert", "assets/lit.frag");
@@ -100,11 +100,12 @@ int main() {
 
 		glBindFramebuffer(GL_FRAMEBUFFER, gBuffer.fbo);
 		glViewport(0, 0, gBuffer.width, gBuffer.height);
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 		geomPassShader.use();
 		geomPassShader.setMat4("_ViewProjection", camera.projectionMatrix() * camera.viewMatrix());
+		geomPassShader.setInt("_MainTex", 0);
 
 		geomPassShader.setMat4("_Model", monkeyTransform.modelMatrix());
 		monkeyModel.draw();
